@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState,useCallback } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -8,6 +8,7 @@ import {
   BoxCubeIcon,
   CalenderIcon,
   ChevronDownIcon,
+  DocsIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
@@ -19,11 +20,19 @@ import {
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
 
+type NavSubItem = {
+  name: string;
+  path?: string;
+  pro?: boolean;
+  new?: boolean;
+  subItems?: NavSubItem[];
+};
+
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  subItems?: NavSubItem[];
 };
 
 const navItems: NavItem[] = [
@@ -41,6 +50,36 @@ const navItems: NavItem[] = [
     icon: <UserCircleIcon />,
     name: "User Profile",
     path: "/profile",
+  },
+  {
+    icon: <DocsIcon />,
+    name: "Content",
+    subItems: [
+      {
+        name: "Reverse: 1999",
+        subItems: [
+          { name: "Characters", path: "/content/re1999/characters", pro: false },
+          { name: "Psychubes", path: "/content/re1999/psychubes", pro: false },
+          { name: "Teams database", path: "/content/re1999/teams-database", pro: false },
+          { name: "Tier List", path: "/content/re1999/tier-list", pro: false },
+          { name: "Team Tier List", path: "/content/re1999/team-tier-list", pro: false },
+          { name: "Guides", path: "/content/re1999/guides", pro: false },
+          { name: "News", path: "/content/re1999/news", pro: false },
+        ],
+      },
+      {
+        name: "Epic Seven",
+        subItems: [
+          { name: "Characters", path: "/content/epic7/characters", pro: false },
+          { name: "Artifacts", path: "/content/epic7/artifacts", pro: false },
+          { name: "Teams database", path: "/content/epic7/teams-database", pro: false },
+          { name: "Tier List", path: "/content/epic7/tier-list", pro: false },
+          { name: "Team Tier List", path: "/content/epic7/team-tier-list", pro: false },
+          { name: "Guides", path: "/content/epic7/guides", pro: false },
+          { name: "News", path: "/content/epic7/news", pro: false },
+        ],
+      },
+    ],
   },
 
   {
@@ -93,6 +132,49 @@ const othersItems: NavItem[] = [
     ],
   },
 ];
+
+function hasActiveSubItem(
+  subItems: NavSubItem[],
+  isActivePath: (path: string) => boolean
+): boolean {
+  return subItems.some((subItem) => {
+    if (subItem.path && isActivePath(subItem.path)) return true;
+    return subItem.subItems ? hasActiveSubItem(subItem.subItems, isActivePath) : false;
+  });
+}
+
+function findActiveSubmenu(pathname: string) {
+  const isActivePath = (path: string) => path === pathname;
+
+  for (const menuType of ["main", "others"] as const) {
+    const items = menuType === "main" ? navItems : othersItems;
+    const index = items.findIndex((nav) =>
+      nav.subItems ? hasActiveSubItem(nav.subItems, isActivePath) : false
+    );
+
+    if (index !== -1) return { type: menuType, index };
+  }
+
+  return null;
+}
+
+function findActiveNestedSubmenus(pathname: string) {
+  const isActivePath = (path: string) => path === pathname;
+  const openItems: Record<string, boolean> = {};
+
+  (["main", "others"] as const).forEach((menuType) => {
+    const items = menuType === "main" ? navItems : othersItems;
+    items.forEach((nav, index) => {
+      nav.subItems?.forEach((subItem) => {
+        if (subItem.subItems && hasActiveSubItem(subItem.subItems, isActivePath)) {
+          openItems[`${menuType}-${index}-${subItem.name}`] = true;
+        }
+      });
+    });
+  });
+
+  return openItems;
+}
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
@@ -166,54 +248,120 @@ const AppSidebar: React.FC = () => {
           )}
           {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
             <div
-              ref={(el) => {
-                subMenuRefs.current[`${menuType}-${index}`] = el;
-              }}
-              className="overflow-hidden transition-all duration-300"
-              style={{
-                height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                    : "0px",
-              }}
+              className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${
+                openSubmenu?.type === menuType && openSubmenu?.index === index
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0"
+              }`}
             >
-              <ul className="mt-2 space-y-1 ml-9">
+              <ul className="min-h-0 overflow-hidden mt-2 space-y-1 ml-9">
                 {nav.subItems.map((subItem) => (
                   <li key={subItem.name}>
-                    <Link
-                      href={subItem.path}
-                      className={`menu-dropdown-item ${
-                        isActive(subItem.path)
-                          ? "menu-dropdown-item-active"
-                          : "menu-dropdown-item-inactive"
-                      }`}
-                    >
-                      {subItem.name}
-                      <span className="flex items-center gap-1 ml-auto">
-                        {subItem.new && (
-                          <span
-                            className={`ml-auto ${
-                              isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
-                            } menu-dropdown-badge `}
-                          >
-                            new
+                    {subItem.subItems ? (
+                        <div>
+                        <button
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.04]"
+                          type="button"
+                          onClick={() => handleNestedSubmenuToggle(`${menuType}-${index}-${subItem.name}`)}
+                        >
+                          <span>{subItem.name}</span>
+                          <ChevronDownIcon
+                            className={`ml-auto h-4 w-4 transition-transform ${
+                              openNestedSubmenus[`${menuType}-${index}-${subItem.name}`]
+                                ? "rotate-180 text-brand-500"
+                                : ""
+                            }`}
+                          />
+                        </button>
+                        <div
+                          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${
+                            openNestedSubmenus[`${menuType}-${index}-${subItem.name}`]
+                              ? "grid-rows-[1fr] opacity-100"
+                              : "grid-rows-[0fr] opacity-0"
+                          }`}
+                        >
+                          <ul className="min-h-0 overflow-hidden ml-3 space-y-1 border-l border-gray-200 pl-3 dark:border-gray-800">
+                            {subItem.subItems.map((childItem) => (
+                              <li key={childItem.name}>
+                                {childItem.path && (
+                                  <Link
+                                    href={childItem.path}
+                                    className={`menu-dropdown-item ${
+                                      isActive(childItem.path)
+                                        ? "menu-dropdown-item-active"
+                                        : "menu-dropdown-item-inactive"
+                                    }`}
+                                  >
+                                    {childItem.name}
+                                    <span className="flex items-center gap-1 ml-auto">
+                                      {childItem.new && (
+                                        <span
+                                          className={`ml-auto ${
+                                            isActive(childItem.path)
+                                              ? "menu-dropdown-badge-active"
+                                              : "menu-dropdown-badge-inactive"
+                                          } menu-dropdown-badge `}
+                                        >
+                                          new
+                                        </span>
+                                      )}
+                                      {childItem.pro && (
+                                        <span
+                                          className={`ml-auto ${
+                                            isActive(childItem.path)
+                                              ? "menu-dropdown-badge-active"
+                                              : "menu-dropdown-badge-inactive"
+                                          } menu-dropdown-badge `}
+                                        >
+                                          pro
+                                        </span>
+                                      )}
+                                    </span>
+                                  </Link>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    ) : (
+                      subItem.path && (
+                        <Link
+                          href={subItem.path}
+                          className={`menu-dropdown-item ${
+                            isActive(subItem.path)
+                              ? "menu-dropdown-item-active"
+                              : "menu-dropdown-item-inactive"
+                          }`}
+                        >
+                          {subItem.name}
+                          <span className="flex items-center gap-1 ml-auto">
+                            {subItem.new && (
+                              <span
+                                className={`ml-auto ${
+                                  isActive(subItem.path)
+                                    ? "menu-dropdown-badge-active"
+                                    : "menu-dropdown-badge-inactive"
+                                } menu-dropdown-badge `}
+                              >
+                                new
+                              </span>
+                            )}
+                            {subItem.pro && (
+                              <span
+                                className={`ml-auto ${
+                                  isActive(subItem.path)
+                                    ? "menu-dropdown-badge-active"
+                                    : "menu-dropdown-badge-inactive"
+                                } menu-dropdown-badge `}
+                              >
+                                pro
+                              </span>
+                            )}
                           </span>
-                        )}
-                        {subItem.pro && (
-                          <span
-                            className={`ml-auto ${
-                              isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
-                            } menu-dropdown-badge `}
-                          >
-                            pro
-                          </span>
-                        )}
-                      </span>
-                    </Link>
+                        </Link>
+                      )
+                    )}
                   </li>
                 ))}
               </ul>
@@ -227,53 +375,13 @@ const AppSidebar: React.FC = () => {
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
     index: number;
-  } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
+  } | null>(() => findActiveSubmenu(pathname));
+  const [openNestedSubmenus, setOpenNestedSubmenus] = useState<Record<string, boolean>>(
+    () => findActiveNestedSubmenus(pathname)
   );
-  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // const isActive = (path: string) => path === pathname;
-   const isActive = useCallback((path: string) => path === pathname, [pathname]);
-
-  useEffect(() => {
-    // Check if the current path matches any submenu item
-    let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "main" | "others",
-                index,
-              });
-              submenuMatched = true;
-            }
-          });
-        }
-      });
-    });
-
-    // If no submenu item matches, close the open submenu
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
-    }
-  }, [pathname,isActive]);
-
-  useEffect(() => {
-    // Set the height of the submenu items when the submenu is opened
-    if (openSubmenu !== null) {
-      const key = `${openSubmenu.type}-${openSubmenu.index}`;
-      if (subMenuRefs.current[key]) {
-        setSubMenuHeight((prevHeights) => ({
-          ...prevHeights,
-          [key]: subMenuRefs.current[key]?.scrollHeight || 0,
-        }));
-      }
-    }
-  }, [openSubmenu]);
+   const isActive = (path: string) => path === pathname;
 
   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
     setOpenSubmenu((prevOpenSubmenu) => {
@@ -286,6 +394,13 @@ const AppSidebar: React.FC = () => {
       }
       return { type: menuType, index };
     });
+  };
+
+  const handleNestedSubmenuToggle = (key: string) => {
+    setOpenNestedSubmenus((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
   };
 
   return (

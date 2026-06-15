@@ -192,8 +192,163 @@
   }
 }
 
+.dark body {
+  background:
+    radial-gradient(circle at top left, rgba(92, 135, 180, 0.16), transparent 34rem),
+    radial-gradient(circle at top right, rgba(174, 102, 180, 0.12), transparent 30rem),
+    #10141f;
+  color: #eef2ff;
+}
+
+.dark header,
+.dark aside {
+  background-color: rgba(20, 25, 38, 0.94) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+.dark [class*="dark:bg-white/\\[0\\.03\\]"],
+.dark [class*="dark:bg-gray-900"],
+.dark [class*="dark:bg-gray-dark"] {
+  background-color: rgba(24, 30, 45, 0.88) !important;
+}
+
+.dark [class*="dark:border-gray-800"],
+.dark [class*="dark:border-gray-700"] {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+.dark .ProseMirror {
+  background-color: rgba(15, 23, 42, 0.74) !important;
+  color: #f8fafc;
+  caret-color: #f8fafc;
+}
+
+.dark .ProseMirror::selection,
+.dark .ProseMirror *::selection {
+  background-color: rgba(125, 166, 255, 0.35);
+}
+
 @utility menu-item {
   @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-theme-sm;
+}
+
+.ProseMirror ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+.ProseMirror ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+
+.ProseMirror * {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.ProseMirror strong {
+  color: #ca9f76;
+}
+
+.ProseMirror strong.dps {
+  color: #d14251;
+}
+
+.ProseMirror strong.sub-dps {
+  color: #d18742;
+}
+
+.ProseMirror strong.support {
+  color: #8799c7;
+}
+
+.ProseMirror strong.sustain {
+  color: #409756;
+}
+
+.ProseMirror strong.rarity-1,
+.ProseMirror span.rarity-1 {
+  color: #a7a7a7;
+}
+
+.ProseMirror strong.rarity-2,
+.ProseMirror span.rarity-2 {
+  color: #93f55b;
+}
+
+.ProseMirror strong.rarity-3,
+.ProseMirror span.rarity-3 {
+  color: #7b84ac;
+}
+
+.ProseMirror strong.rarity-4,
+.ProseMirror span.rarity-4 {
+  color: #513d58;
+}
+
+.ProseMirror strong.rarity-5,
+.ProseMirror span.rarity-5 {
+  color: #d4ba73;
+}
+
+.ProseMirror strong.rarity-6,
+.ProseMirror span.rarity-6 {
+  color: #e5a42b;
+}
+
+.ProseMirror strong.Star,
+.ProseMirror span.Star {
+  color: #5c87b4;
+}
+
+.ProseMirror strong.Beast,
+.ProseMirror span.Beast {
+  color: #c26060;
+}
+
+.ProseMirror strong.Mineral,
+.ProseMirror span.Mineral {
+  color: #aa824a;
+}
+
+.ProseMirror strong.Plant,
+.ProseMirror span.Plant {
+  color: #4bac63;
+}
+
+.ProseMirror strong.Spirit,
+.ProseMirror span.Spirit {
+  color: #ae66b4;
+}
+
+.ProseMirror strong.Intellect,
+.ProseMirror span.Intellect {
+  color: #bdaa5d;
+}
+
+.ProseMirror .character-intro h2,
+.ProseMirror .character-intro p {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 32px;
+}
+
+.ProseMirror .character-intro p {
+  margin-bottom: 10px;
+}
+
+.ProseMirror .character-intro .combined {
+  margin-bottom: 10px;
+}
+
+.ProseMirror .character-intro .combined h2,
+.ProseMirror .character-intro .combined p {
+  display: inline;
+}
+
+.ProseMirror .character-intro .combined h2 {
+  padding-right: 5px;
 }
 
 @utility menu-item-active {
