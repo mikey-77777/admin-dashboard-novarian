@@ -38,18 +38,18 @@
   --color-white: #ffffff;
   --color-black: #101828;
 
-  --color-brand-25: #f2f7ff;
-  --color-brand-50: #ecf3ff;
-  --color-brand-100: #dde9ff;
-  --color-brand-200: #c2d6ff;
-  --color-brand-300: #9cb9ff;
-  --color-brand-400: #7592ff;
-  --color-brand-500: #465fff;
-  --color-brand-600: #3641f5;
-  --color-brand-700: #2a31d8;
-  --color-brand-800: #252dae;
-  --color-brand-900: #262e89;
-  --color-brand-950: #161950;
+  --color-brand-25: #f0fbfc;
+  --color-brand-50: #e0f7f8;
+  --color-brand-100: #b3edf0;
+  --color-brand-200: #80e2e6;
+  --color-brand-300: #4dd7dd;
+  --color-brand-400: #26ced4;
+  --color-brand-500: #00adb5;
+  --color-brand-600: #009ea6;
+  --color-brand-700: #008c93;
+  --color-brand-800: #007a80;
+  --color-brand-900: #005c61;
+  --color-brand-950: #003336;
 
   --color-blue-light-25: #f5fbff;
   --color-blue-light-50: #f0f9ff;
@@ -76,7 +76,7 @@
   --color-gray-800: #1d2939;
   --color-gray-900: #101828;
   --color-gray-950: #0c111d;
-  --color-gray-dark: #1a2231;
+  --color-gray-dark: #393E46;
 
   --color-orange-25: #fffaf5;
   --color-orange-50: #fff6ed;
@@ -148,7 +148,7 @@
     0px 20px 24px -4px rgba(16, 24, 40, 0.08),
     0px 8px 8px -4px rgba(16, 24, 40, 0.03);
   --shadow-datepicker: -5px 0 0 #262d3c, 5px 0 0 #262d3c;
-  --shadow-focus-ring: 0px 0px 0px 4px rgba(70, 95, 255, 0.12);
+  --shadow-focus-ring: 0px 0px 0px 4px rgba(0, 173, 181, 0.16);
   --shadow-slider-navigation:
     0px 1px 2px 0px rgba(16, 24, 40, 0.1), 0px 1px 3px 0px rgba(16, 24, 40, 0.1);
   --shadow-tooltip:
@@ -194,33 +194,55 @@
 
 .dark body {
   background:
-    radial-gradient(circle at top left, rgba(92, 135, 180, 0.16), transparent 34rem),
-    radial-gradient(circle at top right, rgba(174, 102, 180, 0.12), transparent 30rem),
-    #10141f;
-  color: #eef2ff;
+    radial-gradient(circle at top left, rgba(0, 173, 181, 0.16), transparent 34rem),
+    radial-gradient(circle at top right, rgba(0, 173, 181, 0.1), transparent 30rem),
+    #222831;
+  color: #eeeeee;
 }
 
 .dark header,
 .dark aside {
-  background-color: rgba(20, 25, 38, 0.94) !important;
-  border-color: rgba(148, 163, 184, 0.16) !important;
+  background-color: rgba(34, 40, 49, 0.96) !important;
+  border-color: rgba(57, 62, 70, 0.5) !important;
 }
 
 .dark [class*="dark:bg-white/\\[0\\.03\\]"],
 .dark [class*="dark:bg-gray-900"],
 .dark [class*="dark:bg-gray-dark"] {
-  background-color: rgba(24, 30, 45, 0.88) !important;
+  background-color: #393E46 !important;
 }
 
 .dark [class*="dark:border-gray-800"],
 .dark [class*="dark:border-gray-700"] {
-  border-color: rgba(148, 163, 184, 0.18) !important;
+  border-color: rgba(57, 62, 70, 0.5) !important;
+}
+
+/* Override inline hex colors from TSX files for dark mode integration */
+.dark [class*="bg-[#0c101a]"],
+.dark [class*="bg-[#0b0e17]"],
+.dark [class*="bg-[#131926]"],
+.dark [class*="bg-[#0f1420]"] {
+  background-color: #222831 !important;
+}
+
+.dark [class*="bg-[#1a2336]"],
+.dark [class*="bg-[#1a2231]"],
+.dark [class*="bg-[#161f30]"],
+.dark [class*="bg-[#0f1420]"] {
+  background-color: #393E46 !important;
+}
+
+.dark [class*="border-[#2e3e5a]"],
+.dark [class*="border-[#1e293b]"],
+.dark [class*="border-[#161f30]"],
+.dark [class*="ring-[#2e3e5a]"] {
+  border-color: rgba(57, 62, 70, 0.5) !important;
 }
 
 .dark .ProseMirror {
-  background-color: rgba(15, 23, 42, 0.74) !important;
-  color: #f8fafc;
-  caret-color: #f8fafc;
+  background-color: rgba(34, 40, 49, 0.8) !important;
+  color: #eeeeee;
+  caret-color: #eeeeee;
 }
 
 .dark .ProseMirror::selection,
