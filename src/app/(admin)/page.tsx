@@ -8,8 +8,8 @@ import RecentOrders from "@/components/ecommerce/RecentOrders";
 import DemographicCard from "@/components/ecommerce/DemographicCard";
 
 export const metadata: Metadata = {
-  title: "Novarian CMS Dashboard",
-  description: "Content management dashboard for Novarian CMS",
+  title: "Inverdra CMS Dashboard",
+  description: "Inverdra – Invert The Luck, Master The Meta.",
 };
 
 export default function Ecommerce() {

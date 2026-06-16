@@ -83,21 +83,19 @@ const AppHeader: React.FC = () => {
             {/* Cross Icon */}
           </button>
 
-          <Link href="/" className="lg:hidden">
-            <Image
-              width={154}
-              height={32}
-              className="dark:hidden"
-              src="./images/logo/logo.svg"
-              alt="Logo"
-            />
-            <Image
-              width={154}
-              height={32}
-              className="hidden dark:block"
-              src="./images/logo/logo-dark.svg"
-              alt="Logo"
-            />
+          <Link href="/" className="flex items-center gap-2 lg:hidden">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-black">
+              <Image
+                src="/images/logo/inverdra-logo.png"
+                alt="Inverdra Logo"
+                width={36}
+                height={36}
+                className="h-7 w-7 object-contain"
+              />
+            </div>
+            <span className="text-base font-bold tracking-wider text-gray-900 dark:text-gray-50 font-outfit uppercase">
+              Inverdra
+            </span>
           </Link>
 
           <button

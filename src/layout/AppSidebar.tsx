@@ -19,6 +19,7 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
+import { CornerBottomLeft } from "../components/CornerDecoration";
 
 type NavSubItem = {
   name: string;
@@ -39,17 +40,7 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
-  },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
+    path: "/",
   },
   {
     icon: <DocsIcon />,
@@ -81,56 +72,6 @@ const navItems: NavItem[] = [
       },
     ],
   },
-
-  {
-    name: "Forms",
-    icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  },
-  {
-    name: "Tables",
-    icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  },
-  {
-    name: "Pages",
-    icon: <PageIcon />,
-    subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
-      { name: "404 Error", path: "/error-404", pro: false },
-    ],
-  },
-];
-
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
-  },
 ];
 
 function hasActiveSubItem(
@@ -145,16 +86,10 @@ function hasActiveSubItem(
 
 function findActiveSubmenu(pathname: string) {
   const isActivePath = (path: string) => path === pathname;
-
-  for (const menuType of ["main", "others"] as const) {
-    const items = menuType === "main" ? navItems : othersItems;
-    const index = items.findIndex((nav) =>
-      nav.subItems ? hasActiveSubItem(nav.subItems, isActivePath) : false
-    );
-
-    if (index !== -1) return { type: menuType, index };
-  }
-
+  const index = navItems.findIndex((nav) =>
+    nav.subItems ? hasActiveSubItem(nav.subItems, isActivePath) : false
+  );
+  if (index !== -1) return { type: "main" as const, index };
   return null;
 }
 
@@ -162,14 +97,11 @@ function findActiveNestedSubmenus(pathname: string) {
   const isActivePath = (path: string) => path === pathname;
   const openItems: Record<string, boolean> = {};
 
-  (["main", "others"] as const).forEach((menuType) => {
-    const items = menuType === "main" ? navItems : othersItems;
-    items.forEach((nav, index) => {
-      nav.subItems?.forEach((subItem) => {
-        if (subItem.subItems && hasActiveSubItem(subItem.subItems, isActivePath)) {
-          openItems[`${menuType}-${index}-${subItem.name}`] = true;
-        }
-      });
+  navItems.forEach((nav, index) => {
+    nav.subItems?.forEach((subItem) => {
+      if (subItem.subItems && hasActiveSubItem(subItem.subItems, isActivePath)) {
+        openItems[`main-${index}-${subItem.name}`] = true;
+      }
     });
   });
 
@@ -182,7 +114,7 @@ const AppSidebar: React.FC = () => {
 
   const renderMenuItems = (
     navItems: NavItem[],
-    menuType: "main" | "others"
+    menuType: "main"
   ) => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
@@ -373,7 +305,7 @@ const AppSidebar: React.FC = () => {
   );
 
   const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
+    type: "main";
     index: number;
   } | null>(() => findActiveSubmenu(pathname));
   const [openNestedSubmenus, setOpenNestedSubmenus] = useState<Record<string, boolean>>(
@@ -383,7 +315,7 @@ const AppSidebar: React.FC = () => {
   // const isActive = (path: string) => path === pathname;
    const isActive = (path: string) => path === pathname;
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
+  const handleSubmenuToggle = (index: number, menuType: "main") => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&
@@ -419,35 +351,34 @@ const AppSidebar: React.FC = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`py-8 flex  ${
+        className={`py-6 flex items-center border-b border-gray-200 dark:border-gray-800 ${
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
-        <Link href="/">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <Image
-                className="dark:hidden"
-                src="/images/logo/logo.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-              <Image
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-            </>
-          ) : (
+        <Link href="/" className="flex items-center gap-1.5">
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
             <Image
-              src="/images/logo/logo-icon.svg"
-              alt="Logo"
-              width={32}
-              height={32}
+              src="/images/logo/inverdra-logo.png"
+              alt="Inverdra Logo"
+              width={48}
+              height={48}
+              className="h-10 w-10 object-contain"
             />
+          </div>
+          {(isExpanded || isHovered || isMobileOpen) && (
+            <div className="flex min-w-0 flex-col justify-center gap-1 pt-0.5">
+              <Image
+                src="/images/logo/inverdra-text.png"
+                alt="Inverdra Logo"
+                width={158}
+                height={18}
+                className="h-[18px] w-[158px] object-contain object-left"
+                priority
+              />
+              <span className="pl-0.5 text-[10.5px] font-medium leading-none tracking-[0.08em] text-gray-500 dark:text-gray-400">
+                Invert The Luck
+              </span>
+            </div>
           )}
         </Link>
       </div>
@@ -471,26 +402,12 @@ const AppSidebar: React.FC = () => {
               {renderMenuItems(navItems, "main")}
             </div>
 
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
-            </div>
+            {/* Removed unused Others section */}
           </div>
         </nav>
         {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
       </div>
+      <CornerBottomLeft />
     </aside>
   );
 };

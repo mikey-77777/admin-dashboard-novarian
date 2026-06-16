@@ -2806,9 +2806,9 @@ function CharacterContentEditor() {
           aria-modal="true"
           onClick={(e) => { if (e.target === e.currentTarget) setEditingSkill(null); }}
         >
-          <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-[#1e293b] dark:bg-[#0f1420] my-auto">
+          <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-2xl dark:border-gray-200 my-auto">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-150 px-6 py-4 dark:border-[#1e293b] bg-gray-50/50 dark:bg-[#131926]">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-gray-100">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                   {editingSkill.index === -1 ? "Add New Skill" : "Edit Skill"}
@@ -2820,7 +2820,7 @@ function CharacterContentEditor() {
               <button
                 type="button"
                 onClick={() => setEditingSkill(null)}
-                className="rounded-lg p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-white dark:hover:bg-[#1a2236] transition"
+                className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-gray-200 transition"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -3033,11 +3033,11 @@ function CharacterContentEditor() {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 border-t border-gray-150 px-6 py-4 dark:border-[#1e293b] bg-gray-50/50 dark:bg-[#131926]">
+            <div className="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 bg-gray-100">
               <button
                 type="button"
                 onClick={() => setEditingSkill(null)}
-                className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-[#2e3e5a] dark:text-gray-300 dark:hover:bg-[#1a2236] transition"
+                className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-400 hover:text-white hover:bg-gray-200 transition"
               >
                 Cancel
               </button>

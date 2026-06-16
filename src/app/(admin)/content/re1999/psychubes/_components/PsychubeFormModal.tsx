@@ -193,13 +193,13 @@ export default function PsychubeFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-999999 flex items-start justify-center overflow-y-auto bg-gray-950/70 p-4 py-8"
+      className="fixed inset-0 z-999999 flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm p-4 py-8"
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-psychube-title"
     >
       <form
-        className="w-full max-w-4xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-950"
+        className="w-full max-w-4xl overflow-hidden rounded-lg border border-gray-200 bg-gray-100 shadow-theme-xl dark:border-gray-800"
         onSubmit={handleSubmit}
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-800">
