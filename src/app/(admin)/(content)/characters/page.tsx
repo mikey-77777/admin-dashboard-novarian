@@ -408,6 +408,7 @@ const tabs = [
   { id: "basic", label: "Basic" },
   { id: "introduction", label: "Introduction" },
   { id: "profile", label: "Profile" },
+  { id: "skills", label: "Skills" },
   { id: "review", label: "Review" },
   { id: "stats", label: "Stats & Build" },
   { id: "teams", label: "Synergy & Teams" },
@@ -440,12 +441,22 @@ const emptyPayload: CharacterPayload = {
     specialties: ["DPS"],
     last_updated: "24/May/2026",
     review_html: "",
+    review_html_en: "",
+    review_html_vi: "",
     ratings: {},
     resonance_builds: [],
     comments_html: "",
+    comments_html_en: "",
+    comments_html_vi: "",
     stats_html: "",
+    stats_html_en: "",
+    stats_html_vi: "",
     synergy_html: "",
+    synergy_html_en: "",
+    synergy_html_vi: "",
     lore_html: "",
+    lore_html_en: "",
+    lore_html_vi: "",
   },
   inheritance: [],
   special_effects: [],
@@ -456,6 +467,36 @@ const emptyPayload: CharacterPayload = {
 };
 
 function toFormState(payload: CharacterPayload): FormState {
+  const profileObj = payload.profile ?? {};
+  const profileSpecialties = Array.isArray(profileObj.specialties) ? profileObj.specialties : [];
+  const rolesArray = (payload.roles && payload.roles.length > 0)
+    ? payload.roles
+    : profileSpecialties;
+
+  // Normalize resonance builds on load
+  const rawResonanceBuilds = Array.isArray(profileObj.resonance_builds) ? profileObj.resonance_builds : [];
+  const normalizedResonanceBuilds = rawResonanceBuilds.map((build: any) => ({
+    name_en: build.name_en ?? build.name ?? "",
+    name_vi: build.name_vi ?? build.name ?? "",
+    stats: Array.isArray(build.stats) ? build.stats : [],
+  }));
+
+  const syncedProfile = {
+    ...profileObj,
+    specialties: rolesArray,
+    resonance_builds: normalizedResonanceBuilds,
+  };
+
+  // Normalize recommended items on load
+  const rawItems = parseJsonField<any[]>(payload.recommended_items, []);
+  const normalizedItems = rawItems.map((item: any) => ({
+    name_en: item.name_en ?? item.name ?? "",
+    name_vi: item.name_vi ?? item.name ?? "",
+    image: item.image ?? "",
+    notes_en: item.notes_en ?? item.notes ?? "",
+    notes_vi: item.notes_vi ?? item.notes ?? "",
+  }));
+
   return {
     ...payload,
     image: payload.image ?? "",
@@ -464,7 +505,7 @@ function toFormState(payload: CharacterPayload): FormState {
     overview_vi: payload.overview_vi ?? "",
     beginner_notes_en: payload.beginner_notes_en ?? "",
     beginner_notes_vi: payload.beginner_notes_vi ?? "",
-    profile: JSON.stringify(payload.profile ?? {}, null, 2),
+    profile: JSON.stringify(syncedProfile, null, 2),
     euphoria: JSON.stringify(payload.euphoria ?? {}, null, 2),
     skills: JSON.stringify(payload.skills ?? [], null, 2),
     pros_en: JSON.stringify(payload.pros_en ?? [], null, 2),
@@ -472,12 +513,12 @@ function toFormState(payload: CharacterPayload): FormState {
     cons_en: JSON.stringify(payload.cons_en ?? [], null, 2),
     cons_vi: JSON.stringify(payload.cons_vi ?? [], null, 2),
     recommended_teams: JSON.stringify(payload.recommended_teams ?? [], null, 2),
-    recommended_items: JSON.stringify(payload.recommended_items ?? [], null, 2),
+    recommended_items: JSON.stringify(normalizedItems, null, 2),
     inheritance: JSON.stringify(payload.inheritance ?? [], null, 2),
     special_effects: JSON.stringify(payload.special_effects ?? [], null, 2),
     portray: JSON.stringify(payload.portray ?? [], null, 2),
     gallery: JSON.stringify(payload.gallery ?? [], null, 2),
-    roles: JSON.stringify(payload.roles ?? [], null, 2),
+    roles: JSON.stringify(rolesArray, null, 2),
   };
 }
 
@@ -513,6 +554,27 @@ function slugifyName(value: string) {
 }
 
 function normalizePayload(form: FormState): CharacterPayload {
+  const profile = parseJsonField<Record<string, JsonValue>>(form.profile, {});
+  if (profile && Array.isArray(profile.resonance_builds)) {
+    profile.resonance_builds = profile.resonance_builds.map((build: any) => ({
+      name: build.name_en || build.name_vi || "",
+      name_en: build.name_en || "",
+      name_vi: build.name_vi || "",
+      stats: Array.isArray(build.stats) ? build.stats : [],
+    }));
+  }
+
+  const rawItems = parseJsonField<any[]>(form.recommended_items, []);
+  const normalizedItems = rawItems.map((item: any) => ({
+    name: item.name_en || item.name_vi || "",
+    name_en: item.name_en || "",
+    name_vi: item.name_vi || "",
+    image: item.image || "",
+    notes: item.notes_en || item.notes_vi || "",
+    notes_en: item.notes_en || "",
+    notes_vi: item.notes_vi || "",
+  }));
+
   return {
     slug: (form.slug || "").trim(),
     name: (form.name || "").trim(),
@@ -526,7 +588,7 @@ function normalizePayload(form: FormState): CharacterPayload {
     overview_vi: form.overview_vi?.trim() || null,
     beginner_notes_en: form.beginner_notes_en?.trim() || null,
     beginner_notes_vi: form.beginner_notes_vi?.trim() || null,
-    profile: parseJsonField<Record<string, JsonValue>>(form.profile, {}),
+    profile,
     euphoria: parseJsonField<Record<string, JsonValue>>(form.euphoria, {}),
     skills: parseJsonField<JsonValue[]>(form.skills, []),
     pros_en: parseJsonField<string[]>(form.pros_en, []),
@@ -534,7 +596,7 @@ function normalizePayload(form: FormState): CharacterPayload {
     cons_en: parseJsonField<string[]>(form.cons_en, []),
     cons_vi: parseJsonField<string[]>(form.cons_vi, []),
     recommended_teams: parseJsonField<JsonValue[]>(form.recommended_teams, []),
-    recommended_items: parseJsonField<JsonValue[]>(form.recommended_items, []),
+    recommended_items: normalizedItems,
     inheritance: parseJsonField<JsonValue[]>(form.inheritance, []),
     special_effects: parseJsonField<JsonValue[]>(form.special_effects, []),
     portray: parseJsonField<JsonValue[]>(form.portray, []),
@@ -914,11 +976,13 @@ function DynamicArrayEditor({
   value,
   onChange,
   template = {},
+  characterOptions = [],
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   template?: any;
+  characterOptions?: { value: string; label: string }[];
 }) {
   const [isRaw, setIsRaw] = useState(false);
   const [rawText, setRawText] = useState(value);
@@ -1078,6 +1142,22 @@ function DynamicArrayEditor({
                     const val = item[key] ?? "";
                     const isLongText = key === "description" || key === "notes" || key === "effect" || key.endsWith("html");
                     const isImage = key === "image" || key === "icon" || key === "avatar";
+
+                    if (key === "members" && characterOptions.length > 0) {
+                      return (
+                        <div key={key} className="sm:col-span-2 space-y-1">
+                          <label className="text-xs font-semibold text-gray-500 dark:text-[#a0aec0] capitalize">
+                            {key.replace(/_/g, " ")}
+                          </label>
+                          <MultiSelectCombobox
+                            options={characterOptions}
+                            selected={Array.isArray(val) ? val : []}
+                            onChange={(selected) => handleFieldChange(index, key, selected)}
+                            placeholder="Select team members..."
+                          />
+                        </div>
+                      );
+                    }
 
                     return (
                       <div key={key} className={isLongText ? "sm:col-span-2 space-y-1" : "space-y-1"}>
@@ -1461,9 +1541,35 @@ function CharacterContentEditor() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [availableRoles, setAvailableRoles] = useState<{ id: string; name: string }[]>([]);
+  const [allCharacters, setAllCharacters] = useState<{ slug: string; name: string }[]>([]);
 
   // Translation View toggle
   const [languageView, setLanguageView] = useState<"en" | "vi" | "parallel">("parallel");
+
+  // Skills editing modal state
+  const [editingSkill, setEditingSkill] = useState<{
+    index: number;
+    name: string;
+    type: string;
+    image: string;
+    description_en: string;
+    description_vi: string;
+    levels: { level: number; description_en: string; description_vi: string }[];
+    modifier_effects: { term: string; description_en: string; description_vi: string }[];
+  } | null>(null);
+  const [skillLangTab, setSkillLangTab] = useState<"en" | "vi">("en");
+
+  const skillsArray = useMemo(() => {
+    try {
+      return JSON.parse(form.skills || "[]");
+    } catch {
+      return [];
+    }
+  }, [form.skills]);
+
+  const updateSkillsArray = (newSkills: any[]) => {
+    updateField("skills", JSON.stringify(newSkills, null, 2));
+  };
 
   // Dynamic game slug resolution from route URL path
   const gameSlug = useMemo(() => {
@@ -1516,9 +1622,25 @@ function CharacterContentEditor() {
     }));
   }, [availableRoles]);
 
+  const characterOptions = useMemo(() => {
+    return allCharacters.map((c) => ({
+      value: c.name,
+      label: c.name,
+    }));
+  }, [allCharacters]);
+
   const handleRolesChange = (newRoles: string[]) => {
     updateField("roles", JSON.stringify(newRoles, null, 2));
     updateField("role", newRoles[0] || "");
+
+    // Sync to profile.specialties as well
+    let currentProfile: Record<string, JsonValue>;
+    try {
+      currentProfile = parseJsonField<Record<string, JsonValue>>(form.profile, {});
+    } catch {
+      currentProfile = {};
+    }
+    updateField("profile", JSON.stringify({ ...currentProfile, specialties: newRoles }, null, 2));
   };
 
   // Validation errors for JSON fields
@@ -1629,6 +1751,16 @@ function CharacterContentEditor() {
     updateField("profile", JSON.stringify({ ...profile, [key]: value }, null, 2));
   }
 
+  function updateProfileFields(updates: Record<string, JsonValue>) {
+    let profile: Record<string, JsonValue> = {};
+    try {
+      profile = parseJsonField<Record<string, JsonValue>>(form.profile, {});
+    } catch {
+      profile = {};
+    }
+    updateField("profile", JSON.stringify({ ...profile, ...updates }, null, 2));
+  }
+
   async function requestJson<T>(path: string, init?: RequestInit) {
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
@@ -1652,7 +1784,18 @@ function CharacterContentEditor() {
         console.error("Lỗi khi tải danh sách roles:", e);
       }
     }
+    async function loadCharacters() {
+      try {
+        const data = await requestJson<{ slug: string; name: string }[]>(
+          `/api/admin/games/${encodeURIComponent(gameSlug)}/characters`
+        );
+        setAllCharacters(data ?? []);
+      } catch (e) {
+        console.error("Lỗi khi tải danh sách nhân vật:", e);
+      }
+    }
     void loadRoles();
+    void loadCharacters();
   }, [gameSlug]);
 
   async function loadCharacter(characterSlug: string) {
@@ -2074,20 +2217,12 @@ function CharacterContentEditor() {
 
         {activeTab === "profile" && (
           <div className="grid gap-5 md:grid-cols-2">
-            <Field label="Specialties">
-              <input
-                className={inputClass()}
-                placeholder="Ví dụ: DPS, Support, Healer (ngăn cách bởi dấu phẩy)"
-                value={Array.isArray(profileObject.specialties) ? profileObject.specialties.join(", ") : ""}
-                onChange={(event) =>
-                  updateProfileField(
-                    "specialties",
-                    event.target.value
-                      .split(",")
-                      .map((item) => item.trim())
-                      .filter(Boolean)
-                  )
-                }
+            <Field label="Specialties" wide>
+              <MultiSelectCombobox
+                options={rolesOptions}
+                selected={selectedRolesList}
+                onChange={handleRolesChange}
+                placeholder="Select character specialties..."
               />
             </Field>
             <Field label="Last updated">
@@ -2098,14 +2233,7 @@ function CharacterContentEditor() {
               />
             </Field>
 
-            <div className="md:col-span-2">
-              <DynamicArrayEditor
-                label="Skills (Mảng kỹ năng)"
-                value={form.skills}
-                onChange={(value) => updateField("skills", value)}
-                template={{ name: "", type: "Attack", description: "", image: "" }}
-              />
-            </div>
+            {/* Skills editor has been moved to the dedicated Skills tab */}
 
             <div className="md:col-span-2">
               <DynamicArrayEditor
@@ -2127,17 +2255,287 @@ function CharacterContentEditor() {
           </div>
         )}
 
+        {activeTab === "skills" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-150 pb-3 dark:border-[#1e293b]">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+                  Skills Management
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                  Manage Incantations, Ultimates and Passives for this character. Bilingual EN/VI support.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSkillLangTab("en");
+                  setEditingSkill({
+                    index: -1,
+                    name: "",
+                    type: "Incantation",
+                    image: "",
+                    description_en: "",
+                    description_vi: "",
+                    levels: [
+                      { level: 1, description_en: "", description_vi: "" },
+                      { level: 2, description_en: "", description_vi: "" },
+                      { level: 3, description_en: "", description_vi: "" }
+                    ],
+                    modifier_effects: []
+                  });
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-600 transition shadow-sm"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Skill
+              </button>
+            </div>
+
+            {skillsArray.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-12 dark:border-[#1e293b] bg-gray-50/50 dark:bg-[#0b0e17]/50">
+                <svg className="h-10 w-10 text-gray-400 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <p className="text-sm font-semibold text-gray-650 dark:text-gray-400 mt-3">
+                  No skills configured yet
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Click the &quot;Add Skill&quot; button above to create a new skill.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {skillsArray.map((skill: any, index: number) => {
+                  const badgeColor =
+                    skill.type === "Ultimate"
+                      ? "bg-purple-500/10 text-purple-400 dark:bg-purple-500/15 dark:text-purple-300 border-purple-500/20"
+                      : skill.type === "Passive"
+                      ? "bg-emerald-500/10 text-emerald-400 dark:bg-emerald-500/15 dark:text-emerald-300 border-emerald-500/20"
+                      : "bg-blue-500/10 text-blue-400 dark:bg-blue-500/15 dark:text-blue-300 border-blue-500/20";
+
+                  const descEN = skill.description_en || skill.description || "";
+                  const descVI = skill.description_vi || "";
+
+                  return (
+                    <div
+                      key={index}
+                      className="group flex flex-col md:flex-row gap-4 p-5 rounded-xl border border-gray-200 bg-white hover:border-brand-500/50 dark:border-[#1e293b] dark:bg-[#0f1420] dark:hover:border-brand-500/40 transition"
+                    >
+                      {/* Skill icon/image */}
+                      <div className="flex-shrink-0 h-16 w-16 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 dark:bg-[#1a2236] dark:border-[#1e293b] flex items-center justify-center self-start">
+                        {skill.image ? (
+                          <img src={skill.image} alt={skill.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <svg className="h-8 w-8 text-gray-400 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-base font-bold text-gray-800 dark:text-white truncate">
+                            {skill.name}
+                          </h4>
+                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border ${badgeColor}`}>
+                            {skill.type}
+                          </span>
+                        </div>
+
+                        {/* Bilingual descriptions */}
+                        {(descEN || descVI) && (
+                          <div className="mt-2 space-y-1.5">
+                            {descEN && (
+                              <div className="flex items-start gap-2">
+                                <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">EN</span>
+                                <p className="text-sm text-gray-650 dark:text-gray-400 whitespace-pre-line leading-relaxed">{descEN}</p>
+                              </div>
+                            )}
+                            {descVI && (
+                              <div className="flex items-start gap-2">
+                                <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">VI</span>
+                                <p className="text-sm text-gray-650 dark:text-gray-400 whitespace-pre-line leading-relaxed">{descVI}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Levels description */}
+                        {skill.levels && skill.levels.length > 0 && (
+                          <div className="mt-3 border-t border-gray-100 pt-2.5 dark:border-[#1e293b]">
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider block mb-1.5">
+                              Incantation Levels
+                            </span>
+                            <div className="space-y-1">
+                              {skill.levels.map((lvl: any, lvlIdx: number) => (
+                                <div key={lvlIdx} className="text-xs text-gray-650 dark:text-gray-400 flex items-start gap-1.5">
+                                  <span className="text-brand-400 font-medium shrink-0">
+                                    {lvl.level === 1 ? "✦✧✧" : lvl.level === 2 ? "✦✦✧" : "✦✦✦"}
+                                  </span>
+                                  <span className="whitespace-pre-line">{lvl.description_en || lvl.description || ""}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Modifier effects */}
+                        {skill.modifier_effects && skill.modifier_effects.length > 0 && (
+                          <div className="mt-3 border-t border-gray-100 pt-2.5 dark:border-[#1e293b]">
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider block mb-1.5">
+                              Modifier Effects
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {skill.modifier_effects.map((effect: any, effIdx: number) => (
+                                <span
+                                  key={effIdx}
+                                  className="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs text-gray-700 dark:bg-[#1a2236] dark:text-gray-300 border border-gray-200 dark:border-[#1e293b]"
+                                  title={effect.description_en || effect.description || ""}
+                                >
+                                  <strong className="text-brand-500">{effect.term}</strong>
+                                  <span className="text-gray-400 dark:text-gray-500">—</span>
+                                  {effect.description_en || effect.description || ""}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex md:flex-col items-center gap-2 justify-end shrink-0">
+                        {/* Order controls */}
+                        <div className="flex md:flex-row gap-1">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => {
+                              const list = [...skillsArray];
+                              const temp = list[index];
+                              list[index] = list[index - 1];
+                              list[index - 1] = temp;
+                              updateSkillsArray(list);
+                            }}
+                            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-[#1a2236] disabled:opacity-30 transition"
+                            title="Move up"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === skillsArray.length - 1}
+                            onClick={() => {
+                              const list = [...skillsArray];
+                              const temp = list[index];
+                              list[index] = list[index + 1];
+                              list[index + 1] = temp;
+                              updateSkillsArray(list);
+                            }}
+                            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-[#1a2236] disabled:opacity-30 transition"
+                            title="Move down"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Edit / Delete */}
+                        <div className="flex md:flex-row gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSkillLangTab("en");
+                              // Migrate old single-lang format to bilingual
+                              const migrateLevels = (levels: any[]) => levels.map((l: any) => ({
+                                level: l.level,
+                                description_en: l.description_en || l.description || "",
+                                description_vi: l.description_vi || ""
+                              }));
+                              const migrateEffects = (effects: any[]) => effects.map((e: any) => ({
+                                term: e.term || "",
+                                description_en: e.description_en || e.description || "",
+                                description_vi: e.description_vi || ""
+                              }));
+                              setEditingSkill({
+                                index,
+                                name: skill.name || "",
+                                type: skill.type || "Incantation",
+                                image: skill.image || "",
+                                description_en: skill.description_en || skill.description || "",
+                                description_vi: skill.description_vi || "",
+                                levels: skill.levels && skill.levels.length > 0 ? migrateLevels(skill.levels) : [
+                                  { level: 1, description_en: "", description_vi: "" },
+                                  { level: 2, description_en: "", description_vi: "" },
+                                  { level: 3, description_en: "", description_vi: "" }
+                                ],
+                                modifier_effects: skill.modifier_effects ? migrateEffects(skill.modifier_effects) : []
+                              });
+                            }}
+                            className="inline-flex items-center justify-center p-2 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition"
+                            title="Edit"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`Delete skill "${skill.name}"?`)) {
+                                const list = [...skillsArray];
+                                list.splice(index, 1);
+                                updateSkillsArray(list);
+                              }
+                            }}
+                            className="inline-flex items-center justify-center p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+                            title="Delete"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === "review" && (
           <div className="grid gap-5 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <Field label="Review (Đánh giá chung)" wide>
-                <RichTextEditor
-                  textStyles={gameConfig.textStyles}
-                  value={String(profileObject.review_html ?? "")}
-                  onChange={(value) => updateProfileField("review_html", value)}
-                />
-              </Field>
-            </div>
+            {/* Review EN / VI */}
+            {(languageView === "en" || languageView === "parallel") && (
+              <div className={languageView === "en" ? "md:col-span-2" : ""}>
+                <Field label="Review EN (Đánh giá chung EN)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.review_html_en ?? profileObject.review_html ?? "")}
+                    onChange={(value) => updateProfileFields({ review_html_en: value, review_html: value })}
+                  />
+                </Field>
+              </div>
+            )}
+            {(languageView === "vi" || languageView === "parallel") && (
+              <div className={languageView === "vi" ? "md:col-span-2" : ""}>
+                <Field label="Review VI (Đánh giá chung VI)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.review_html_vi ?? "")}
+                    onChange={(value) => updateProfileField("review_html_vi", value)}
+                  />
+                </Field>
+              </div>
+            )}
 
             {/* Pros EN / VI */}
             {(languageView === "en" || languageView === "parallel") && (
@@ -2205,29 +2603,57 @@ function CharacterContentEditor() {
                 label="Recommended Psychubes / Items (Mảng vật phẩm khuyên dùng)"
                 value={form.recommended_items}
                 onChange={(value) => updateField("recommended_items", value)}
-                template={{ name: "", image: "", notes: "" }}
+                template={{ name_en: "", name_vi: "", image: "", notes_en: "", notes_vi: "" }}
               />
             </div>
 
-            <div className="md:col-span-2">
-              <Field label="Comments (Bình luận & Ghi chú thêm)" wide>
-                <RichTextEditor
-                  textStyles={gameConfig.textStyles}
-                  value={String(profileObject.comments_html ?? "")}
-                  onChange={(value) => updateProfileField("comments_html", value)}
-                />
-              </Field>
-            </div>
+            {/* Comments EN / VI */}
+            {(languageView === "en" || languageView === "parallel") && (
+              <div className={languageView === "en" ? "md:col-span-2" : ""}>
+                <Field label="Comments EN (Bình luận EN)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.comments_html_en ?? profileObject.comments_html ?? "")}
+                    onChange={(value) => updateProfileFields({ comments_html_en: value, comments_html: value })}
+                  />
+                </Field>
+              </div>
+            )}
+            {(languageView === "vi" || languageView === "parallel") && (
+              <div className={languageView === "vi" ? "md:col-span-2" : ""}>
+                <Field label="Comments VI (Bình luận VI)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.comments_html_vi ?? "")}
+                    onChange={(value) => updateProfileField("comments_html_vi", value)}
+                  />
+                </Field>
+              </div>
+            )}
 
-            <div className="md:col-span-2">
-              <Field label="Stats (Chỉ số cơ bản)" wide>
-                <RichTextEditor
-                  textStyles={gameConfig.textStyles}
-                  value={String(profileObject.stats_html ?? "")}
-                  onChange={(value) => updateProfileField("stats_html", value)}
-                />
-              </Field>
-            </div>
+            {/* Stats EN / VI */}
+            {(languageView === "en" || languageView === "parallel") && (
+              <div className={languageView === "en" ? "md:col-span-2" : ""}>
+                <Field label="Stats EN (Chỉ số cơ bản EN)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.stats_html_en ?? profileObject.stats_html ?? "")}
+                    onChange={(value) => updateProfileFields({ stats_html_en: value, stats_html: value })}
+                  />
+                </Field>
+              </div>
+            )}
+            {(languageView === "vi" || languageView === "parallel") && (
+              <div className={languageView === "vi" ? "md:col-span-2" : ""}>
+                <Field label="Stats VI (Chỉ số cơ bản VI)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.stats_html_vi ?? "")}
+                    onChange={(value) => updateProfileField("stats_html_vi", value)}
+                  />
+                </Field>
+              </div>
+            )}
           </div>
         )}
 
@@ -2239,31 +2665,60 @@ function CharacterContentEditor() {
                 value={form.recommended_teams}
                 onChange={(value) => updateField("recommended_teams", value)}
                 template={{ name: "", members: [], notes: "" }}
+                characterOptions={characterOptions}
               />
             </div>
-            <div className="md:col-span-2">
-              <Field label="Synergy (Khả năng tương thích đội hình)" wide>
-                <RichTextEditor
-                  textStyles={gameConfig.textStyles}
-                  value={String(profileObject.synergy_html ?? "")}
-                  onChange={(value) => updateProfileField("synergy_html", value)}
-                />
-              </Field>
-            </div>
+            {/* Synergy EN / VI */}
+            {(languageView === "en" || languageView === "parallel") && (
+              <div className={languageView === "en" ? "md:col-span-2" : ""}>
+                <Field label="Synergy EN (Tương thích đội hình EN)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.synergy_html_en ?? profileObject.synergy_html ?? "")}
+                    onChange={(value) => updateProfileFields({ synergy_html_en: value, synergy_html: value })}
+                  />
+                </Field>
+              </div>
+            )}
+            {(languageView === "vi" || languageView === "parallel") && (
+              <div className={languageView === "vi" ? "md:col-span-2" : ""}>
+                <Field label="Synergy VI (Tương thích đội hình VI)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.synergy_html_vi ?? "")}
+                    onChange={(value) => updateProfileField("synergy_html_vi", value)}
+                  />
+                </Field>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === "extras" && (
           <div className="grid gap-5 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <Field label="Lore (Truyền thuyết & Lý lịch)" wide>
-                <RichTextEditor
-                  textStyles={gameConfig.textStyles}
-                  value={String(profileObject.lore_html ?? "")}
-                  onChange={(value) => updateProfileField("lore_html", value)}
-                />
-              </Field>
-            </div>
+            {/* Lore EN / VI */}
+            {(languageView === "en" || languageView === "parallel") && (
+              <div className={languageView === "en" ? "md:col-span-2" : ""}>
+                <Field label="Lore EN (Truyền thuyết EN)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.lore_html_en ?? profileObject.lore_html ?? "")}
+                    onChange={(value) => updateProfileFields({ lore_html_en: value, lore_html: value })}
+                  />
+                </Field>
+              </div>
+            )}
+            {(languageView === "vi" || languageView === "parallel") && (
+              <div className={languageView === "vi" ? "md:col-span-2" : ""}>
+                <Field label="Lore VI (Truyền thuyết VI)" wide>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={String(profileObject.lore_html_vi ?? "")}
+                    onChange={(value) => updateProfileField("lore_html_vi", value)}
+                  />
+                </Field>
+              </div>
+            )}
 
             <div className="md:col-span-2">
               <DynamicObjectEditor
@@ -2343,6 +2798,303 @@ function CharacterContentEditor() {
           </div>
         )}
       </section>
+
+      {editingSkill && (
+        <div
+          className="fixed inset-0 z-999999 flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm p-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingSkill(null); }}
+        >
+          <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-[#1e293b] dark:bg-[#0f1420] my-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-150 px-6 py-4 dark:border-[#1e293b] bg-gray-50/50 dark:bg-[#131926]">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {editingSkill.index === -1 ? "Add New Skill" : "Edit Skill"}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                  Fill in both English and Vietnamese descriptions for bilingual support.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSkill(null)}
+                className="rounded-lg p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-white dark:hover:bg-[#1a2236] transition"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+              {/* Name, Type & Image — always visible */}
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Skill Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingSkill.name}
+                    onChange={(e) => setEditingSkill({ ...editingSkill, name: e.target.value })}
+                    placeholder="e.g. WindsongErta"
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-[#2e3e5a] dark:bg-[#0c101a] dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Skill Type *
+                  </label>
+                  <select
+                    value={editingSkill.type}
+                    onChange={(e) => setEditingSkill({ ...editingSkill, type: e.target.value })}
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-[#2e3e5a] dark:bg-[#0c101a] dark:text-white"
+                  >
+                    <option value="Incantation">Incantation</option>
+                    <option value="Ultimate">Ultimate</option>
+                    <option value="Passive">Passive</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Image URL
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://... or /re1999/skills/..."
+                    value={editingSkill.image}
+                    onChange={(e) => setEditingSkill({ ...editingSkill, image: e.target.value })}
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-[#2e3e5a] dark:bg-[#0c101a] dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                  />
+                </div>
+              </div>
+
+              {/* Language Tab Switcher */}
+              <div className="border-t border-gray-150 pt-5 dark:border-[#1e293b]">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 mr-2">Language:</span>
+                  {(["en", "vi"] as const).map((lang) => (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => setSkillLangTab(lang)}
+                      className={`rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${
+                        skillLangTab === lang
+                          ? "bg-brand-500 text-white shadow-sm"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-[#1a2236] dark:text-gray-400 dark:hover:bg-[#222e47]"
+                      }`}
+                    >
+                      {lang === "en" ? "🇺🇸 English" : "🇻🇳 Tiếng Việt"}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Description — bilingual */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Description ({skillLangTab === "en" ? "English" : "Tiếng Việt"})
+                  </label>
+                  <RichTextEditor
+                    textStyles={gameConfig.textStyles}
+                    value={skillLangTab === "en" ? editingSkill.description_en : editingSkill.description_vi}
+                    onChange={(val) => {
+                      if (skillLangTab === "en") {
+                        setEditingSkill({ ...editingSkill, description_en: val });
+                      } else {
+                        setEditingSkill({ ...editingSkill, description_vi: val });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Incantation Levels — bilingual */}
+              <div className="border-t border-gray-150 pt-5 dark:border-[#1e293b]">
+                <h4 className="text-sm font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                  <span>Incantation Levels</span>
+                  <span className="text-xs font-normal text-gray-500 dark:text-gray-500">(1★, 2★, 3★)</span>
+                </h4>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((lvlNum) => {
+                    const existingLvl = editingSkill.levels.find((l) => l.level === lvlNum);
+                    const lvlValEN = existingLvl?.description_en ?? "";
+                    const lvlValVI = existingLvl?.description_vi ?? "";
+                    const currentVal = skillLangTab === "en" ? lvlValEN : lvlValVI;
+                    return (
+                      <div key={lvlNum} className="flex gap-3 items-start">
+                        <div className="flex flex-col items-center shrink-0 pt-2.5">
+                          <span className="text-sm font-bold text-brand-400">
+                            {lvlNum === 1 ? "✦✧✧" : lvlNum === 2 ? "✦✦✧" : "✦✦✦"}
+                          </span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-600 mt-0.5">Lv.{lvlNum}</span>
+                        </div>
+                        <textarea
+                          placeholder={`${skillLangTab === "en" ? "Description for" : "Mô tả cho"} ${lvlNum}★...`}
+                          value={currentVal}
+                          rows={2}
+                          onChange={(e) => {
+                            const newLevels = [...editingSkill.levels];
+                            const idx = newLevels.findIndex((l) => l.level === lvlNum);
+                            const field = skillLangTab === "en" ? "description_en" : "description_vi";
+                            if (idx !== -1) {
+                              newLevels[idx] = { ...newLevels[idx], [field]: e.target.value };
+                            } else {
+                              newLevels.push({ level: lvlNum, description_en: "", description_vi: "", [field]: e.target.value });
+                            }
+                            setEditingSkill({ ...editingSkill, levels: newLevels });
+                          }}
+                          className="w-full rounded-lg border border-gray-300 bg-transparent p-3 text-sm text-gray-800 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-[#2e3e5a] dark:bg-[#0c101a] dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 resize-y"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Modifier Effects — bilingual */}
+              <div className="border-t border-gray-150 pt-5 dark:border-[#1e293b]">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold text-gray-800 dark:text-white">
+                    Modifier Effects
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingSkill({
+                        ...editingSkill,
+                        modifier_effects: [
+                          ...editingSkill.modifier_effects,
+                          { term: "", description_en: "", description_vi: "" }
+                        ]
+                      });
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200 dark:bg-[#1a2236] dark:text-gray-300 dark:hover:bg-[#222e47] transition border border-gray-200 dark:border-[#1e293b]"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Effect
+                  </button>
+                </div>
+                {editingSkill.modifier_effects.length === 0 ? (
+                  <p className="text-xs text-gray-500 dark:text-gray-500 italic py-3 text-center rounded-lg border border-dashed border-gray-300 dark:border-[#1e293b]">
+                    No modifier effects configured. Click &quot;Add Effect&quot; to create one.
+                  </p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {editingSkill.modifier_effects.map((eff, effIdx) => (
+                      <div key={effIdx} className="flex gap-2 items-start rounded-lg border border-gray-200 bg-gray-50/50 p-3 dark:border-[#1e293b] dark:bg-[#131926]">
+                        <div className="grid gap-2 flex-1 sm:grid-cols-[120px_1fr]">
+                          <input
+                            type="text"
+                            placeholder="Keyword"
+                            value={eff.term}
+                            onChange={(e) => {
+                              const list = [...editingSkill.modifier_effects];
+                              list[effIdx] = { ...list[effIdx], term: e.target.value };
+                              setEditingSkill({ ...editingSkill, modifier_effects: list });
+                            }}
+                            className="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-800 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-[#2e3e5a] dark:bg-[#0c101a] dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                          />
+                          <input
+                            type="text"
+                            placeholder={skillLangTab === "en" ? "Effect description (EN)" : "Mô tả hiệu ứng (VI)"}
+                            value={skillLangTab === "en" ? (eff.description_en || "") : (eff.description_vi || "")}
+                            onChange={(e) => {
+                              const list = [...editingSkill.modifier_effects];
+                              const field = skillLangTab === "en" ? "description_en" : "description_vi";
+                              list[effIdx] = { ...list[effIdx], [field]: e.target.value };
+                              setEditingSkill({ ...editingSkill, modifier_effects: list });
+                            }}
+                            className="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs text-gray-800 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-[#2e3e5a] dark:bg-[#0c101a] dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const list = [...editingSkill.modifier_effects];
+                            list.splice(effIdx, 1);
+                            setEditingSkill({ ...editingSkill, modifier_effects: list });
+                          }}
+                          className="shrink-0 p-1.5 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md transition mt-0.5"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 border-t border-gray-150 px-6 py-4 dark:border-[#1e293b] bg-gray-50/50 dark:bg-[#131926]">
+              <button
+                type="button"
+                onClick={() => setEditingSkill(null)}
+                className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-[#2e3e5a] dark:text-gray-300 dark:hover:bg-[#1a2236] transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!editingSkill.name.trim()) {
+                    alert("Skill name is required.");
+                    return;
+                  }
+                  
+                  // Clean up levels
+                  const cleanedLevels = editingSkill.levels
+                    .map((l) => ({
+                      level: l.level,
+                      description_en: l.description_en?.trim() || "",
+                      description_vi: l.description_vi?.trim() || ""
+                    }))
+                    .filter((l) => l.description_en !== "" || l.description_vi !== "");
+                  
+                  // Clean up modifier effects
+                  const cleanedModifiers = editingSkill.modifier_effects
+                    .map((e) => ({
+                      term: e.term.trim(),
+                      description_en: e.description_en?.trim() || "",
+                      description_vi: e.description_vi?.trim() || ""
+                    }))
+                    .filter((e) => e.term !== "");
+
+                  const updatedSkill = {
+                    name: editingSkill.name.trim(),
+                    type: editingSkill.type,
+                    image: editingSkill.image.trim() || null,
+                    description_en: editingSkill.description_en?.trim() || "",
+                    description_vi: editingSkill.description_vi?.trim() || "",
+                    levels: cleanedLevels,
+                    modifier_effects: cleanedModifiers
+                  };
+
+                  const list = [...skillsArray];
+                  if (editingSkill.index === -1) {
+                    list.push(updatedSkill);
+                  } else {
+                    list[editingSkill.index] = updatedSkill;
+                  }
+                  
+                  updateSkillsArray(list);
+                  setEditingSkill(null);
+                }}
+                className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition shadow-sm"
+              >
+                {editingSkill.index === -1 ? "Add Skill" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,98 +1,263 @@
 "use client";
 
-import type { Psychube } from "./types";
+import { useState } from "react";
+import type { Psychube, PsychubeAmplification, PsychubeStat } from "./types";
 
-export default function PsychubeCard({
+type PsychubeTab = "amplification" | "stats" | "impression" | "info";
+
+const tabs: { id: PsychubeTab; label: string }[] = [
+  { id: "amplification", label: "Amplification" },
+  { id: "stats", label: "Stats" },
+  { id: "impression", label: "Impression" },
+  { id: "info", label: "Info" },
+];
+
+function TabContent({
   psychube,
-  onClick,
-  onEdit,
+  activeTab,
 }: {
   psychube: Psychube;
-  onClick: () => void;
-  onEdit: () => void;
+  activeTab: PsychubeTab;
 }) {
-  return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-xs transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-brand-500/30">
-      
-      {/* Quick Edit Button (Floating in top-right, visible on hover) */}
-      <button
-        type="button"
-        title={`Edit ${psychube.name}`}
-        onClick={(event) => {
-          event.stopPropagation();
-          onEdit();
-        }}
-        className="absolute top-2.5 right-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-gray-500 shadow-sm transition-all duration-200 hover:bg-brand-500 hover:text-white md:opacity-0 md:group-hover:opacity-100 dark:bg-gray-900/90 dark:text-gray-400 dark:hover:bg-brand-500 dark:hover:text-white cursor-pointer"
-      >
-        <svg
-          className="h-3.5 w-3.5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-          />
-        </svg>
-      </button>
+  if (activeTab === "stats") {
+    return (
+      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-gray-50 text-gray-600 dark:bg-white/[0.05] dark:text-gray-300">
+            <tr>
+              <th className="px-5 py-3 font-semibold">Stat</th>
+              <th className="px-5 py-3 font-semibold">Lv. 1</th>
+              <th className="px-5 py-3 font-semibold">Lv. 60</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+            {psychube.stats.map((stat, index) => (
+              <tr
+                key={`${stat.name}-${index}`}
+                className="text-gray-700 odd:bg-white even:bg-gray-50/70 dark:text-gray-200 dark:odd:bg-transparent dark:even:bg-white/[0.025]"
+              >
+                <td className="px-5 py-3 font-medium">{stat.name}</td>
+                <td className="px-5 py-3">{stat.level_1}</td>
+                <td className="px-5 py-3">{stat.level_60}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
 
-      {/* Card Click Area for Details */}
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex w-full flex-col text-left focus:outline-none cursor-pointer"
-      >
-        {/* Psychube Image Container */}
-        <div className="relative aspect-square w-full overflow-hidden bg-gray-50 dark:bg-gray-900/50">
-          {psychube.image ? (
-            <img
-              src={psychube.image}
-              alt={psychube.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gray-100 dark:bg-gray-800">
-              <span className="text-3xl font-extrabold text-brand-500/30 dark:text-brand-500/20">
-                {psychube.name.charAt(0)}
-              </span>
-            </div>
-          )}
+  if (activeTab === "impression") {
+    return (
+      <div className="whitespace-pre-wrap rounded-lg border border-gray-200 p-5 text-sm leading-7 text-gray-700 dark:border-gray-800 dark:text-gray-200">
+        {psychube.impression}
+      </div>
+    );
+  }
 
-          {/* Rarity Star Rating Overlay in bottom corner */}
-          <div className="absolute bottom-2 left-2 flex items-center rounded-md bg-gray-950/70 px-2 py-0.5 text-[10px] font-bold text-yellow-400 shadow-sm backdrop-blur-xs">
-            {psychube.rarity}★
-          </div>
-        </div>
-
-        {/* Info Area */}
-        <div className="flex flex-1 flex-col p-3.5">
-          <h3 className="line-clamp-2 text-sm font-semibold text-gray-800 transition-colors group-hover:text-brand-500 dark:text-white/90 dark:group-hover:text-brand-400">
-            {psychube.name}
-          </h3>
-          
-          {/* Subtags / Info */}
-          <div className="mt-2 flex flex-wrap gap-1">
-            {psychube.tags.slice(0, 2).map((tag) => (
+  if (activeTab === "info") {
+    return (
+      <div className="grid gap-5 rounded-lg border border-gray-200 p-5 dark:border-gray-800 sm:grid-cols-2">
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Tags
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {psychube.tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-sm bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-white/[0.04] dark:text-gray-400"
+                className="rounded-md border border-brand-500/20 bg-brand-500/10 px-2.5 py-1 text-xs font-semibold text-brand-500"
               >
                 {tag}
               </span>
             ))}
-            {psychube.release_patch && (
-              <span className="ml-auto text-[10px] font-medium text-gray-400 dark:text-gray-500">
-                v{psychube.release_patch}
-              </span>
-            )}
           </div>
         </div>
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Release patch
+          </p>
+          <span className="inline-flex rounded-md border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200">
+            {psychube.release_patch}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-gray-200 px-5 dark:border-gray-800">
+      {psychube.amplifications.map((amplification, index) => (
+        <div
+          key={`${amplification.level}-${index}`}
+          className="border-b border-gray-200 py-5 last:border-0 dark:border-gray-800"
+        >
+          <p className="mb-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
+            Lv. {amplification.level}:
+          </p>
+          <p className="whitespace-pre-wrap text-sm leading-7 text-gray-800 dark:text-gray-100">
+            {amplification.description}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PsychubeDetailModal({
+  psychube,
+  open,
+  onClose,
+  onEdit,
+}: {
+  psychube: Psychube | null;
+  open: boolean;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const [activeTab, setActiveTab] = useState<PsychubeTab>("amplification");
+
+  if (!open || !psychube) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-999999 flex items-start justify-center overflow-y-auto bg-gray-950/70 p-4 py-8"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="psychube-detail-title"
+    >
+      <div className="w-full max-w-2xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-950">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-gray-205 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
+              {psychube.image ? (
+                <img
+                  src={psychube.image}
+                  alt={psychube.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-lg font-bold text-brand-500">
+                  {psychube.name.charAt(0)}
+                </span>
+              )}
+            </span>
+            <div>
+              <h2 id="psychube-detail-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+                {psychube.name}
+              </h2>
+              <p className="text-xs text-yellow-500 font-medium mt-0.5">
+                {"★".repeat(psychube.rarity)}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              className="h-9 rounded-lg border border-gray-300 px-3 text-xs font-semibold text-gray-750 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+              onClick={onEdit}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.05]"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        {/* Tab List */}
+        <div className="px-6 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex overflow-x-auto" role="tablist">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={`border-b-2 px-4 py-3 text-sm font-semibold transition cursor-pointer ${
+                  activeTab === tab.id
+                    ? "border-brand-500 text-brand-500"
+                    : "border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
+                }`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Body */}
+        <div className="p-6 max-h-[calc(100vh-250px)] overflow-y-auto">
+          <TabContent psychube={psychube} activeTab={activeTab} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function PsychubeCard({
+  psychube,
+  onEdit,
+  onClick,
+}: {
+  psychube: Psychube;
+  onEdit: (psychube: Psychube) => void;
+  onClick: (psychube: Psychube) => void;
+}) {
+  return (
+    <div
+      onClick={() => onClick(psychube)}
+      className="group relative flex flex-col items-center justify-between rounded-xl border border-gray-200 bg-white p-4 text-center hover:border-brand-500 hover:shadow-lg dark:border-gray-800 dark:bg-white/[0.03] transition-all cursor-pointer h-full"
+    >
+      {/* Edit pencil icon */}
+      <button
+        type="button"
+        className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/[0.05] transition-all cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit(psychube);
+        }}
+        title="Edit Psychube"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
       </button>
 
+      <div className="w-full flex flex-col items-center">
+        {/* Psychube Image */}
+        <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-gray-150 bg-gray-50 dark:border-gray-700 dark:bg-gray-900 mb-3 shadow-xs">
+          {psychube.image ? (
+            <img
+              src={psychube.image}
+              alt={psychube.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="text-2xl font-bold text-brand-500">
+              {psychube.name.charAt(0)}
+            </span>
+          )}
+        </div>
+        
+        {/* Name */}
+        <h3 className="text-xs font-semibold text-gray-800 dark:text-white line-clamp-2 h-8 flex items-center justify-center px-1">
+          {psychube.name}
+        </h3>
+        
+        {/* Rarity */}
+        <div className="mt-2 text-[10px] font-bold text-yellow-500">
+          {"★".repeat(psychube.rarity)}
+        </div>
+      </div>
     </div>
   );
 }

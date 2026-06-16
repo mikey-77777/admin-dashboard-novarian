@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import PsychubeCard from "./_components/PsychubeCard";
+import PsychubeCard, { PsychubeDetailModal } from "./_components/PsychubeCard";
 import PsychubeFormModal from "./_components/PsychubeFormModal";
-import PsychubeDetailModal from "./_components/PsychubeDetailModal";
-import { PSYCHUBE_TAGS } from "./_components/types";
 import type { Psychube } from "./_components/types";
 
 const API_BASE_URL =
@@ -26,9 +24,9 @@ export default function PsychubesPage() {
   const [tag, setTag] = useState("");
   const [releasePatch, setReleasePatch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPsychube, setEditingPsychube] = useState<Psychube | null>(null);
-  const [viewingPsychube, setViewingPsychube] = useState<Psychube | null>(null);
+  const [selectedPsychube, setSelectedPsychube] = useState<Psychube | null>(null);
   const [error, setError] = useState("");
 
   const loadPsychubes = useCallback(async () => {
@@ -75,6 +73,20 @@ export default function PsychubesPage() {
     setReleasePatch("");
   };
 
+  const handleAddClick = () => {
+    setEditingPsychube(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEditClick = (psychube: Psychube) => {
+    setEditingPsychube(psychube);
+    setIsFormOpen(true);
+  };
+
+  const handleCardClick = (psychube: Psychube) => {
+    setSelectedPsychube(psychube);
+  };
+
   const inputClass =
     "h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white";
 
@@ -95,10 +107,7 @@ export default function PsychubesPage() {
         <button
           type="button"
           className="h-10 rounded-lg bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600 cursor-pointer"
-          onClick={() => {
-            setEditingPsychube(null);
-            setIsAddOpen(true);
-          }}
+          onClick={handleAddClick}
         >
           + Add Psychube
         </button>
@@ -116,7 +125,7 @@ export default function PsychubesPage() {
           <div className="flex items-center rounded-lg border border-gray-200 p-0.5 dark:border-gray-700">
             <button
               type="button"
-              className={`h-9 rounded-md px-3 text-xs font-bold ${
+              className={`h-9 rounded-md px-3 text-xs font-bold cursor-pointer ${
                 rarity === "all"
                   ? "bg-brand-500 text-white"
                   : "text-gray-600 dark:text-gray-300"
@@ -129,7 +138,7 @@ export default function PsychubesPage() {
               <button
                 key={value}
                 type="button"
-                className={`h-9 rounded-md px-3 text-xs font-bold ${
+                className={`h-9 rounded-md px-3 text-xs font-bold cursor-pointer ${
                   rarity === value
                     ? "bg-brand-500 text-white"
                     : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/[0.04]"
@@ -141,18 +150,12 @@ export default function PsychubesPage() {
             ))}
           </div>
 
-          <select
-            className={`${inputClass} w-40 cursor-pointer`}
+          <input
+            className={`${inputClass} w-40`}
             value={tag}
+            placeholder="Any tag"
             onChange={(event) => setTag(event.target.value)}
-          >
-            <option value="">Any tag</option>
-            {PSYCHUBE_TAGS.map((tagOption) => (
-              <option key={tagOption} value={tagOption}>
-                {tagOption}
-              </option>
-            ))}
-          </select>
+          />
           <input
             className={`${inputClass} w-40`}
             value={releasePatch}
@@ -161,7 +164,7 @@ export default function PsychubesPage() {
           />
           <button
             type="button"
-            className="h-10 rounded-lg border border-gray-300 px-3 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+            className="h-10 rounded-lg border border-gray-300 px-3 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04] cursor-pointer"
             disabled={
               !search &&
               rarity === "all" &&
@@ -174,7 +177,7 @@ export default function PsychubesPage() {
           </button>
           <button
             type="button"
-            className="h-10 rounded-lg border border-gray-300 px-4 text-xs font-bold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+            className="h-10 rounded-lg border border-gray-300 px-4 text-xs font-bold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04] cursor-pointer"
             onClick={() => void loadPsychubes()}
             disabled={isLoading}
           >
@@ -189,50 +192,49 @@ export default function PsychubesPage() {
         </div>
       )}
 
-      <div>
+      {/* Grid Layout of Psychube Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {isLoading && psychubes.length === 0 ? (
-          <div className="rounded-lg border border-gray-200 bg-white px-5 py-16 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="col-span-full rounded-lg border border-gray-200 bg-white px-5 py-16 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03]">
             Loading Psychubes...
           </div>
         ) : psychubes.length ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {psychubes.map((psychube) => (
-              <PsychubeCard
-                key={psychube.id}
-                psychube={psychube}
-                onClick={() => setViewingPsychube(psychube)}
-                onEdit={() => {
-                  setEditingPsychube(psychube);
-                  setIsAddOpen(true);
-                }}
-              />
-            ))}
-          </div>
+          psychubes.map((psychube) => (
+            <PsychubeCard
+              key={psychube.id}
+              psychube={psychube}
+              onEdit={handleEditClick}
+              onClick={handleCardClick}
+            />
+          ))
         ) : (
-          <div className="rounded-lg border border-gray-200 bg-white px-5 py-16 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="col-span-full rounded-lg border border-gray-200 bg-white px-5 py-16 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03]">
             No Psychubes found.
           </div>
         )}
       </div>
 
+      {/* Create / Edit Form Modal */}
       <PsychubeFormModal
-        open={isAddOpen}
+        open={isFormOpen}
         psychube={editingPsychube}
         onClose={() => {
-          setIsAddOpen(false);
+          setIsFormOpen(false);
           setEditingPsychube(null);
         }}
         onCreated={() => void loadPsychubes()}
       />
 
+      {/* Detail Modal */}
       <PsychubeDetailModal
-        open={!!viewingPsychube}
-        psychube={viewingPsychube}
-        onClose={() => setViewingPsychube(null)}
-        onEdit={(psychube) => {
-          setViewingPsychube(null);
-          setEditingPsychube(psychube);
-          setIsAddOpen(true);
+        psychube={selectedPsychube}
+        open={!!selectedPsychube}
+        onClose={() => setSelectedPsychube(null)}
+        onEdit={() => {
+          if (selectedPsychube) {
+            handleEditClick(selectedPsychube);
+            setSelectedPsychube(null);
+          }
         }}
       />
     </div>
