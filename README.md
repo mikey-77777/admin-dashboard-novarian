@@ -1,12 +1,12 @@
-# TailAdmin Next.js - Free Next.js Tailwind Admin Dashboard Template
+# Inverdra-CMS
 
-TailAdmin is a free and open-source admin dashboard template built on **Next.js and Tailwind CSS** providing developers with everything they need to create a feature-rich and data-driven: back-end, dashboard, or admin panel solution for any sort of web project.
+Inverdra-CMS is the content management dashboard for the Novaria ecosystem, built on **Next.js, React, TypeScript, and Tailwind CSS** for editorial workflows, game-data operations, and backend-integrated admin tooling.
 
 ![TailAdmin - Next.js Dashboard Preview](./banner.png)
 
-With TailAdmin Next.js, you get access to all the necessary dashboard UI components, elements, and pages required to build a high-quality and complete dashboard or admin panel. Whether you're building a dashboard or admin panel for a complex web application or a simple website.
+With Inverdra-CMS, you get access to the dashboard UI components, editorial screens, and admin workflows needed to operate the Novaria CMS effectively.
 
-TailAdmin utilizes the powerful features of **Next.js 16** and common features of Next.js such as server-side rendering (SSR), static site generation (SSG), and seamless API route integration. Combined with the advancements of **React 19** and the robustness of **TypeScript**, TailAdmin is the perfect solution to help get your project up and running quickly.
+Inverdra-CMS utilizes the powerful features of **Next.js 16** and common features of Next.js such as server-side rendering (SSR), static site generation (SSG), and seamless API route integration. Combined with **React 19** and **TypeScript**, it provides a strong base for CMS and admin-product development.
 
 ## Overview
 
@@ -30,9 +30,9 @@ TailAdmin provides essential UI components and layouts for building feature-rich
 * [Free Version](https://nextjs-free-demo.tailadmin.com)
 * [Pro Version](https://nextjs-demo.tailadmin.com)
 
-### Other Versions
+### Template Source
 
-- [Next.js Version](https://github.com/TailAdmin/free-nextjs-admin-dashboard)
+- [Original Next.js template source](https://github.com/TailAdmin/free-nextjs-admin-dashboard)
 - [React.js Version](https://github.com/TailAdmin/free-react-tailwind-admin-dashboard)
 - [Vue.js Version](https://github.com/TailAdmin/vue-tailwind-admin-dashboard)
 - [Angular Version](https://github.com/TailAdmin/free-angular-tailwind-dashboard)
@@ -42,16 +42,16 @@ TailAdmin provides essential UI components and layouts for building feature-rich
 
 ### Prerequisites
 
-To get started with TailAdmin, ensure you have the following prerequisites installed and set up:
+To get started with Inverdra-CMS, ensure you have the following prerequisites installed and set up:
 
 * Node.js 18.x or later (recommended to use Node.js 20.x or later)
 
 ### Cloning the Repository
 
-Clone the repository using the following command:
+Clone the repository using your Inverdra-CMS Git remote:
 
 ```bash
-git clone https://github.com/TailAdmin/free-nextjs-admin-dashboard.git
+git clone <your-inverdra-cms-remote-url>.git
 ```
 
 > Windows Users: place the repository near the root of your drive if you face issues while cloning.
@@ -76,7 +76,7 @@ git clone https://github.com/TailAdmin/free-nextjs-admin-dashboard.git
 
 ## Components
 
-TailAdmin is a pre-designed starting point for building a web-based dashboard using Next.js and Tailwind CSS. The template includes:
+Inverdra-CMS is built on a dashboard-oriented Next.js and Tailwind CSS foundation. The project includes:
 
 * Sophisticated and accessible sidebar
 * Data visualization components
@@ -202,7 +202,7 @@ A major update focused on Next.js 16 implementation and comprehensive redesign.
 
 ## License
 
-TailAdmin Next.js Free Version is released under the MIT License.
+Inverdra-CMS follows the repository license terms in this project.
 
 ## Support
 If you find this project helpful, please consider giving it a star on GitHub. Your support helps us continue developing and maintaining this template.
